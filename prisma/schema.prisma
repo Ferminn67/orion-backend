@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  password     String
+  role         String   @default("waiter")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  orders       Order[]
+}
+
+model MenuItem {
+  id          String   @id @default(uuid())
+  name        String
+  price       Float
+  emoji       String   @default("&#127829;")
+  category    String
+  available   Boolean  @default(true)
+  popular     Boolean  @default(false)
+  station     String   @default("hot")
+  size        String?
+  description String?
+  createdAt   DateTime @default(now())
+  orderItems  OrderItem[]
+}
+
+model Table {
+  id          String   @id @default(uuid())
+  number      Int      @unique
+  capacity    Int
+  shape       String   @default("square")
+  status      String   @default("available")
+  waiter      String?
+  guestCount  Int?
+  openedAt    DateTime?
+  version     Int      @default(1)
+  orders      Order[]
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  num        Int         @unique @default(autoincrement())
+  type       String
+  status     String      @default("pending")
+  table      Table?      @relation(fields:[tableId], references:[id])
+  tableId    String?
+  customer   String?
+  subtotal   Float
+  tax        Float
+  total      Float
+  kitchenAck Boolean     @default(false)
+  readyAt    DateTime?
+  paidAt     DateTime?
+  payMethod  String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  user       User?       @relation(fields:[userId], references:[id])
+  userId     String?
+  items      OrderItem[]
+  movements  CashMovement[]
+}
+
+model OrderItem {
+  id         String    @id @default(uuid())
+  order      Order     @relation(fields:[orderId], references:[id], onDelete:Cascade)
+  orderId    String
+  menuItem   MenuItem? @relation(fields:[menuItemId], references:[id])
+  menuItemId String?
+  name       String
+  qty        Int
+  price      Float
+  station    String
+  notes      String?
+}
+
+model CashMovement {
+  id       String   @id @default(uuid())
+  order    Order?   @relation(fields:[orderId], references:[id])
+  orderId  String?
+  type     String
+  method   String
+  amount   Float
+  note     String
+  time     DateTime @default(now())
+}
+
+model Notification {
+  id       String   @id @default(uuid())
+  type     String
+  message  String
+  orderId  String?
+  read     Boolean  @default(false)
+  time     DateTime @default(now())
+}
+
+model Ingredient {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  unit      String   @default("unidad")
+  stock     Float    @default(0)
+  minStock  Float    @default(5)
+  cost      Float    @default(0)
+  category  String   @default("General")
+  emoji     String   @default("&#127829;")
+  createdAt DateTime @default(now())
+  recipes   Recipe[]
+}
+
+model Recipe {
+  id           String     @id @default(uuid())
+  menuItemName String
+  ingredient   Ingredient @relation(fields:[ingredientId], references:[id])
+  ingredientId String
+  quantity     Float
+}
